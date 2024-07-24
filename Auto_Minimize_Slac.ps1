@@ -11,6 +11,11 @@
 # IExpressでexe化するとき、 残念ながら引数は埋め込み　なんのために引数にしたんだ！
 # PowerShell.exe -ExecutionPolicy Bypass -File C:\Users\kenichi\Dropbox\gitdir\Auto_Minimize_Slac\Auto_Minimize_Slac.ps1 1.0 general
 
+#  for Debug output 
+#  $DebugPreference = 'Continue'
+#  or
+#  Auto_Minimize_Slac.ps1 -Debug 1.0 general
+#
 
 # Parameters
 Param (
@@ -126,12 +131,11 @@ function zzz($timeup, [string]$msg = "")
 
 
 
-Write-Host $Arg1
-Write-Host $Arg2
+Write-Debug $Arg1
+Write-Debug $Arg2
 
 $TargetWindowName = $Arg2
-#$TargetWindowName = $Args[0]
-#Write-Host "* * * TargetWindowName: " $TargetWindowName
+Write-Debug "* * * TargetWindowName: $TargetWindowName" 
 
 $nowH = (Get-Date).Hour
 if($nowH -ge 1 -And $nowH -lt 9){
@@ -148,9 +152,9 @@ if($nowH -ge 1 -And $nowH -lt 9){
    return
 }
 
-Write-Host "str:  " $str
+Write-Debug "str:  $str" 
 $timeup = [DateTime]::ParseExact($str,"yyyy/MM/dd HH:mm:ss", $null);
-Write-Host "timeup:   " $timeup
+Write-Debug "timeup:  $timeup" 
 
 
 
@@ -162,9 +166,9 @@ Write-Host "timeup:   " $timeup
 $Timeout = [TimeSpan]::FromMinutes($Arg1)
 do {
 
-    $NowTotalWindowTItle = Get-Process | Where-Object {$_.MainWindowTitle -ne ""} | Select-Object MainWindowTitle
-
-   Write-Host "* * * WindowTitle of ALL GUI : " $NowTotalWindowTItle
+   $NowTotalWindowTItle = Get-Process | Where-Object {$_.MainWindowTitle -ne ""} | Select-Object MainWindowTitle
+#DAME   Write-Debug "* * * WindowTitle of ALL GUI : $NowTotalWindowTItle" 
+#   Write-Host "* * * WindowTitle of ALL GUI : " $NowTotalWindowTItle
 
    Start-Sleep -Milliseconds 3000
 
@@ -172,14 +176,15 @@ do {
 
    if (($now - $timeup) -le 0)
    {
-      Write-Host ("MADA.....    Now:" + (Get-Date -Format "HH:mm") + "]  <time:" + $timeup + ">    " + ($now - $timeup))  -ForegroundColor DarkGray
+      Write-Debug ("MADA.....    Now:" + (Get-Date -Format "HH:mm") + "]  <time:" + $timeup + ">    " + ($now - $timeup))
+#      Write-Host ("MADA.....    Now:" + (Get-Date -Format "HH:mm") + "]  <time:" + $timeup + ">    " + ($now - $timeup))  -ForegroundColor DarkGray
    }else{
-      Write-Host "Finish"
+      Write-Debug "Finish"
       break
    }
 
    $IdleTime = [PInvoke.Win32.UserInput]::IdleTime
-#   Write-Host "<IdleTime:" + $IdleTime + "<Timeout:" + $Timeout + ">  " + " TimeoutPercent:" + $TimeoutPercent
+#   Write-Debug "<IdleTime:" + $IdleTime + "<Timeout:" + $Timeout + ">  " + " TimeoutPercent:" + $TimeoutPercent
    $TimeoutPercent = ($IdleTime.TotalSeconds / $Timeout.TotalSeconds) * 100
    if($TimeoutPercent -ge 100){
       $TimeoutPercent=100
@@ -187,30 +192,24 @@ do {
    Write-Progress -Activity "Show desktop until:" -Status ("[IdleTime:" + $IdleTime + "]  <Timeout:" + $Timeout + ">") -PercentComplete $TimeoutPercent
 
    if ($IdleTime -gt $Timeout) {
-   #     Write-Host "A     <IdleTime:" + $IdleTime + "<Timeout:" + $Timeout
+   #     Write-Debug "A     <IdleTime:" + $IdleTime + "<Timeout:" + $Timeout
    #    #   @{Name=slack; ProcessName=slack; Id=19168; Path=C:\Users\saclalog1\AppData\Local\slack\app-4.26.3\slack.exe; MainWindowTitle=Slack | general | 1_StudyLawlerHorio_20220609}
       $hwnd = [Win32.Utils]::GetForegroundWindow()
       $null = [Win32.Utils]::GetWindowThreadProcessId($hwnd, [ref] $myPid)
       $WindowTitle = [string](Get-Process | Where-Object ID -eq $myPid | Select-Object MainWindowTitle)
       
-      Write-Host "- - - WindowTitle of Current GUI : " $WindowTitle
+      Write-Debug "- - - WindowTitle of Current GUI : $WindowTitle" 
 
 #      if(    $WindowTitle.Contains("Slack | general") ){
       if(    $WindowTitle.Contains($TargetWindowName) ){
-#         Write-Host "Minumize 1"
+#         Write-Debug "Minumize 1"
 #      if(    $WindowTitle.Contains("Chrome") ){
 #         Start-Process "Shell:::{3080F90D-D7AD-11D9-BD98-0000947B0257}"      Show Desktop DAME   
          $window=[System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
          $windowPattern=$window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern)
          $windowPattern.SetWindowVisualState([System.Windows.Automation.WindowVisualState]::Minimized)
-#         Write-Host "Minumize 2"
-      }else{
-#         Write-Host "Not Slac"
       }
-   }else{
-   #     Write-Host "B     <IdleTime:" + $IdleTime + "<Timeout:" + $Timeout
    }
-#   Write-Host "<IdleTime:" + $IdleTime + "<Timeout:" + $Timeout + ">  "
 } while ($true)
 
 #Write-Host "Do exit"
