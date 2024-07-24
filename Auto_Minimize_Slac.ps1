@@ -166,11 +166,11 @@ Write-Debug "timeup:  $timeup"
 $Timeout = [TimeSpan]::FromMinutes($Arg1)
 do {
 
-   $NowTotalWindowTItle = Get-Process | Where-Object {$_.MainWindowTitle -ne ""} | Select-Object MainWindowTitle
+#   $NowTotalWindowTItle = Get-Process | Where-Object {$_.MainWindowTitle -ne ""} | Select-Object MainWindowTitle
 #DAME   Write-Debug "* * * WindowTitle of ALL GUI : $NowTotalWindowTItle" 
 #   Write-Host "* * * WindowTitle of ALL GUI : " $NowTotalWindowTItle
 
-   Start-Sleep -Milliseconds 3000
+   Start-Sleep -Milliseconds 5000
 
    $now = Get-Date
 
@@ -189,16 +189,20 @@ do {
    if($TimeoutPercent -ge 100){
       $TimeoutPercent=100
    }
-   Write-Progress -Activity "Show desktop until:" -Status ("[IdleTime:" + $IdleTime + "]  <Timeout:" + $Timeout + ">") -PercentComplete $TimeoutPercent
+
+
+   $hwnd = [Win32.Utils]::GetForegroundWindow()
+   $null = [Win32.Utils]::GetWindowThreadProcessId($hwnd, [ref] $myPid)
+   $WindowTitle = [string](Get-Process | Where-Object ID -eq $myPid | Select-Object MainWindowTitle)      
+   Write-Debug "- - - WindowTitle of Current GUI : $WindowTitle"
+
+
+
+   Write-Progress -Activity "Show desktop until:"  -CurrentOperation ("[IdleTime:" + $IdleTime + "]  <Timeout:" + $Timeout + ">")  -Status ("Active Window Title [$WindowTitle]") -PercentComplete $TimeoutPercent
 
    if ($IdleTime -gt $Timeout) {
    #     Write-Debug "A     <IdleTime:" + $IdleTime + "<Timeout:" + $Timeout
    #    #   @{Name=slack; ProcessName=slack; Id=19168; Path=C:\Users\saclalog1\AppData\Local\slack\app-4.26.3\slack.exe; MainWindowTitle=Slack | general | 1_StudyLawlerHorio_20220609}
-      $hwnd = [Win32.Utils]::GetForegroundWindow()
-      $null = [Win32.Utils]::GetWindowThreadProcessId($hwnd, [ref] $myPid)
-      $WindowTitle = [string](Get-Process | Where-Object ID -eq $myPid | Select-Object MainWindowTitle)
-      
-      Write-Debug "- - - WindowTitle of Current GUI : $WindowTitle" 
 
 #      if(    $WindowTitle.Contains("Slack | general") ){
       if(    $WindowTitle.Contains($TargetWindowName) ){
