@@ -3,17 +3,22 @@
 
 
 # MEMO  
-# �E�B���h�E�^�C�g���̈ꗗ��\��
+# Arg1: Miniute
+# Arg2: Target Window title Name
+# .\Auto_Minimize_Slac.ps1 0.5 general
 # Get-Process | Where-Object {$_.MainWindowTitle -ne ""} | Select-Object MainWindowTitle
 #
+# IExpressでexe化するとき、 残念ながら引数は埋め込み　なんのために引数にしたんだ！
+# PowerShell.exe -ExecutionPolicy Bypass -File C:\Users\kenichi\Dropbox\gitdir\Auto_Minimize_Slac\Auto_Minimize_Slac.ps1 1.0 general
 
 
 # Parameters
 Param (
+   $Arg1,$Arg2,
    [Parameter(HelpMessage="Timeout minutes until minimuze")][alias("Timeout","t")][ValidateRange(1,1440)][Int]$TimeoutMin = 1,
    [alias("Force","f")][Switch]$ForceFlag
 )
-  
+
 $ActionInt = 0
 if ($ForceFlag) {
    $ActionInt = $ActionInt + 4
@@ -114,6 +119,20 @@ function zzz($timeup, [string]$msg = "")
 
 
 
+
+
+
+
+
+
+
+Write-Host $Arg1
+Write-Host $Arg2
+
+$TargetWindowName = $Arg2
+#$TargetWindowName = $Args[0]
+#Write-Host "* * * TargetWindowName: " $TargetWindowName
+
 $nowH = (Get-Date).Hour
 if($nowH -ge 1 -And $nowH -lt 9){
     $str = [string](Get-Date).ToString("yyyy/MM/dd")  + " 09:00:00"
@@ -122,16 +141,16 @@ if($nowH -ge 1 -And $nowH -lt 9){
     $str = [string](Get-Date).ToString("yyyy/MM/dd")  + " 17:00:00"
 }elseif($nowH -gt 17 -And $nowH -lt 24){
     $tommorow = (Get-Date).AddDays(1)
-    $str = [string]($tommorow).ToString("yyyy/MM/dd")  + " 1:00:00"
+    $str = [string]($tommorow).ToString("yyyy/MM/dd")  + " 01:00:00"
 }elseif($nowH -eq 0){
-   $str = [string](Get-Date).ToString("yyyy/MM/dd")  + " 1:00:00"
+   $str = [string](Get-Date).ToString("yyyy/MM/dd")  + " 01:00:00"
 }else{
    return
 }
 
-#Write-Host "str:  " + [string]$str
+Write-Host "str:  " $str
 $timeup = [DateTime]::ParseExact($str,"yyyy/MM/dd HH:mm:ss", $null);
-#Write-Host "START   timeup:   " + $timeup
+Write-Host "timeup:   " $timeup
 
 
 
@@ -139,22 +158,25 @@ $timeup = [DateTime]::ParseExact($str,"yyyy/MM/dd HH:mm:ss", $null);
 #  zzz $timeup Timeup
 
 
-$Timeout = [TimeSpan]::FromMinutes($TimeoutMin)
-#$Timeout = [TimeSpan]::FromMinutes(0.05)
+#$Timeout = [TimeSpan]::FromMinutes($TimeoutMin)
+$Timeout = [TimeSpan]::FromMinutes($Arg1)
 do {
+
+    $NowTotalWindowTItle = Get-Process | Where-Object {$_.MainWindowTitle -ne ""} | Select-Object MainWindowTitle
+
+   Write-Host "* * * WindowTitle of ALL GUI : " $NowTotalWindowTItle
 
    Start-Sleep -Milliseconds 3000
 
    $now = Get-Date
+
    if (($now - $timeup) -le 0)
    {
-#      Write-Host ("MADA Now:" + (Get-Date -Format "HH:mm") + "]  <time:" + $timeup + ">    " + ($now - $timeup))  -ForegroundColor DarkGray
+      Write-Host ("MADA.....    Now:" + (Get-Date -Format "HH:mm") + "]  <time:" + $timeup + ">    " + ($now - $timeup))  -ForegroundColor DarkGray
    }else{
-#      Write-Host "Finish"
+      Write-Host "Finish"
       break
    }
-
-
 
    $IdleTime = [PInvoke.Win32.UserInput]::IdleTime
 #   Write-Host "<IdleTime:" + $IdleTime + "<Timeout:" + $Timeout + ">  " + " TimeoutPercent:" + $TimeoutPercent
@@ -171,11 +193,10 @@ do {
       $null = [Win32.Utils]::GetWindowThreadProcessId($hwnd, [ref] $myPid)
       $WindowTitle = [string](Get-Process | Where-Object ID -eq $myPid | Select-Object MainWindowTitle)
       
-      Write-Host "WindowTitle"
-      Write-Host $WindowTitle
+      Write-Host "- - - WindowTitle of Current GUI : " $WindowTitle
 
 #      if(    $WindowTitle.Contains("Slack | general") ){
-      if(    $WindowTitle.Contains("general") ){
+      if(    $WindowTitle.Contains($TargetWindowName) ){
 #         Write-Host "Minumize 1"
 #      if(    $WindowTitle.Contains("Chrome") ){
 #         Start-Process "Shell:::{3080F90D-D7AD-11D9-BD98-0000947B0257}"      Show Desktop DAME   
